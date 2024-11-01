@@ -8,6 +8,7 @@ const ComponentsListener = require("./handler/ComponentsListener");
 const EventsHandler = require("./handler/EventsHandler");
 const { QuickYAML } = require("quick-yaml.db");
 const mongoose = require("mongoose");
+const { EmbedBuilder } = require("discord.js");
 class DiscordBot extends Client {
   collection = {
     application_commands: new Collection(),
@@ -23,11 +24,6 @@ class DiscordBot extends Client {
   rest_application_commands_array = [];
   login_attempts = 0;
   login_timestamp = 0;
-  statusMessages = [
-    { name: "Status 1", type: 4 },
-    { name: "Status 2", type: 4 },
-    { name: "Status 3", type: 4 },
-  ];
 
   commands_handler = new CommandsHandler(this);
   components_handler = new ComponentsHandler(this);
@@ -61,14 +57,18 @@ class DiscordBot extends Client {
     new ComponentsListener(this);
   }
 
-  startStatusRotation = () => {
-    let index = 0;
-    setInterval(() => {
-      this.user.setPresence({ activities: [this.statusMessages[index]] });
-      index = (index + 1) % this.statusMessages.length;
-    }, 4000);
-  };
-
+  // startStatusRotation = () => {
+  //   let index = 0;
+  //   setInterval(() => {
+  //     this.user.setPresence({ activities: [this.statusMessages[index]] });
+  //     index = (index + 1) % this.statusMessages.length;
+  //   }, 4000);
+  // };
+  logToChannel = async (data) => {
+    const channel = this.channels.cache.get(config.logChannels.all);
+    const embed = new EmbedBuilder().setColor(data.color || 'DarkButNotBlack').setDescription(data.description).setTimestamp();
+    await channel.send({ embeds: [embed] });
+  }
   connect = async () => {
     warn(
       `Attempting to connect to the Discord bot... (${this.login_attempts + 1})`
@@ -81,7 +81,7 @@ class DiscordBot extends Client {
       this.commands_handler.load();
       this.components_handler.load();
       this.events_handler.load();
-      this.startStatusRotation();
+      // this.startStatusRotation();
 
       warn(
         "Attempting to register application commands... (this might take a while!)"

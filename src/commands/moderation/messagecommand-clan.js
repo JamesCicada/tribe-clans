@@ -28,17 +28,24 @@ module.exports = new MessageCommand({
       message.mentions.roles.first() || message.guild.roles.cache.get(args[0]);
     const roleId = role?.id;
     try {
-      const clan = await clansDb.findOne({ roleId: roleId });
+      let clan;
+      let role;
+      if (!args[0]) {
+        clan = await clansDb.findOne({ members: command.member.id });
+      } else {
+        clan = await clansDb.findOne({ roleId: roleId });
+      }
       if (!clan) {
         await message.edit({
           content: "No clan found.",
         });
         return;
       }
+      const validRole = message.guild.roles.cache.get(clan.roleId);
       const embed = new EmbedBuilder()
         .setDescription(
           `
-        ## **${role.name}** Clan Info
+        ## **${validRole.name}** Clan Info
 
         > Role: <@&${clan.roleId}>
 
@@ -51,6 +58,8 @@ module.exports = new MessageCommand({
         > Voice Channel: <#${clan.voiceId}>
         
         > Text Channel: <#${clan.textId}>
+
+        > Clan ID: \`\`\`${clan.clanId}\`\`\`
         `
         )
         .setColor(0x0099ff);

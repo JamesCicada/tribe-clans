@@ -56,6 +56,12 @@ module.exports = new MessageCommand({
           });
           return;
         }
+        if(!clan.members.includes(member.id)){
+          await reply.edit({
+            content: "Member is not in the clan.",
+          });
+          return;
+        }
         await clansDb.findOneAndUpdate(
           {
             members: message.member.id,
@@ -100,6 +106,18 @@ module.exports = new MessageCommand({
           content: "Member removed from the clan.",
         });
       }
+      await client.logToChannel({
+        color: action === "add" ? "Green" : "Red",
+        description: `
+        **Clan:** ${clan.name}
+
+        **Action:** ${action}
+
+        **Member:** <@${member.id}>
+
+        **Responsible:** <@${message.member.id}>
+        `,
+      });
     } catch (err) {
       await reply.edit({
         content: "Something went wrong.",

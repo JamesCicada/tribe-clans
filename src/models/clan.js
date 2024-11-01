@@ -1,6 +1,7 @@
 const { Schema, model } = require("mongoose");
 
 const clanSchema = new Schema({
+  clanId: String,
   leader: String,
   coleaders: [String],
   members: [String],

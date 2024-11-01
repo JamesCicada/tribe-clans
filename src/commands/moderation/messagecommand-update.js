@@ -24,7 +24,13 @@ module.exports = new MessageCommand({
     });
     const role =
       message.mentions.roles.first() || message.guild.roles.cache.get(args[0]);
-    const clans = await clansDb.findOne({ roleId: role.id });
+    const clanId = args[0];
+    let clans;
+    if (args[0].length == 10) {
+      clans = await clansDb.findOne({ clanId: args[0] });
+    } else {
+      clans = await clansDb.findOne({ roleId: role.id });
+    }
     if (!clans) {
       await reply.edit({
         content: "No clan found.",
@@ -42,6 +48,7 @@ module.exports = new MessageCommand({
         });
         return;
       }
+      let oldValue;
       switch (action) {
         case "vc":
           const channel =
@@ -54,6 +61,7 @@ module.exports = new MessageCommand({
             });
             return;
           }
+          oldValue = clans.voiceId;
           clans.voiceId = channel.id;
           await clans.save();
           await reply.edit({
@@ -71,6 +79,7 @@ module.exports = new MessageCommand({
             });
             return;
           }
+          oldValue = clans.textId;
           clans.textId = textChannel.id;
           await clans.save();
           await reply.edit({
@@ -88,6 +97,7 @@ module.exports = new MessageCommand({
             });
             return;
           }
+          oldValue = clans.leader;
           clans.leader = member.id;
           await clans.save();
           await reply.edit({
@@ -95,6 +105,18 @@ module.exports = new MessageCommand({
           });
           break;
       }
+      await client.logToChannel({
+        color: "Yellow",
+        description: `**${message.member.user.tag}** updated the clan ${action}.
+        > old ${action}: ${
+          action == "leader" ? "<@!" + oldValue + ">" : "<#" + oldValue + ">"
+        } (${oldValue})
+
+        > new ${action}: ${
+          action == "leader" ? "<@!" + newValue + ">" : "<#" + newValue + ">"
+        } (${newValue})
+        `,
+      });
     } catch (err) {
       await message.edit({
         content: "Something went wrong.",

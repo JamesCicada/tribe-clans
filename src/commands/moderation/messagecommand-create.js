@@ -3,7 +3,7 @@ const DiscordBot = require("../../client/DiscordBot");
 const MessageCommand = require("../../structure/MessageCommand");
 const config = require("../../config");
 const clansDb = require("../../models/clan");
-
+const ShortUniqueId = require("short-unique-id");
 module.exports = new MessageCommand({
   command: {
     name: "create",
@@ -11,7 +11,6 @@ module.exports = new MessageCommand({
     aliases: [],
   },
   /**
-   *
    * @param {DiscordBot} client
    * @param {Message} message
    * @param {string[]} args
@@ -24,10 +23,10 @@ module.exports = new MessageCommand({
       content: "Please wait...",
     });
     const ownerId =
-      message.mentions.members.first() ||
-      message.guild.members.cache.get(args[0]);
+      command.mentions.members.first() ||
+      command.guild.members.cache.get(args[0]);
     const role =
-      message.mentions.roles.first() || message.guild.roles.cache.get(args[1]);
+      command.mentions.roles.first() || command.guild.roles.cache.get(args[1]);
     const voiceId = args[2];
     const textId = args[3];
     try {
@@ -85,7 +84,7 @@ module.exports = new MessageCommand({
         return;
       }
       const isClanVoice = await clansDb.findOne({
-        voiceChannelId: voiceId,
+        voiceId: voiceId,
       });
       if (isClanVoice) {
         command.react("❌");
@@ -103,7 +102,7 @@ module.exports = new MessageCommand({
         return;
       }
       const isClanText = await clansDb.findOne({
-        textChannelId: textId,
+        textId: textId,
       });
       if (isClanText) {
         command.react("❌");
@@ -112,7 +111,12 @@ module.exports = new MessageCommand({
         });
         return;
       }
+      const uid = new ShortUniqueId({ length: 8 });
+      const clanId = uid.rnd();
+      console.log(clanId);
+
       const newClan = new clansDb({
+        clanId,
         leader: ownerId.user.id,
         coleaders: [],
         members: [ownerId.user.id],
@@ -125,6 +129,22 @@ module.exports = new MessageCommand({
         content: `Clan created.`,
       });
       command.react("✅");
+      await client.logToChannel({
+        color: "Green",
+        description: `<@${command.author.id}> created a new clan.
+          Here's the info:
+
+          > Clan ID: \`\`\`${clanId}\`\`\`
+
+          > Leader: <@${newClan.leader}>
+
+          > Role: <@&${newClan.roleId}>
+
+          > Voice: <#${newClan.voiceId}>
+          
+          > Text: <#${newClan.textId}>
+          `,
+      });
     } catch (err) {
       await message.edit({
         content: "Something went wrong.",

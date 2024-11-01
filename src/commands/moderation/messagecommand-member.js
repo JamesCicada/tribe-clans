@@ -83,7 +83,7 @@ module.exports = new MessageCommand({
         });
         collector.on("collect", async (i) => {
           if (i.customId == "accept") {
-            await member.roles.add(clan.roleId);
+            await member.roles.add(clan.roleId, ['Added to the clan.']);
             await message.edit({
               content: `${member} has joined ${role.name} clan.`,
               components: [],
@@ -109,7 +109,7 @@ module.exports = new MessageCommand({
           }
         });
       } else if (action === "remove") {
-        await member.roles.remove(clan.roleId);
+        await member.roles.remove(clan.roleId, ['Kicked from the clan.']);
         await message.edit({
           content: `${member} has left ${role.name} clan.`,
         });
@@ -117,7 +117,17 @@ module.exports = new MessageCommand({
           { roleId: clan.roleId },
           { $pull: { members: member.id } }
         );
+        await clansDb.findOneAndUpdate(
+          { roleId: clan.roleId },
+          { $pull: { coleaders: member.id } }
+        );
       }
+      await client.logToChannel({
+        color: action === "add" ? "Green" : "Red",
+        description: `${member} has ${action}ed from ${role.name} clan.
+          Responsible: ${command.member}
+          `,
+      });
     } catch (err) {
       await message.edit({
         content: "Something went wrong.",

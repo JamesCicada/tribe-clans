@@ -26,19 +26,27 @@ module.exports = new MessageCommand({
     message = await message.reply({
       content: "Please wait...",
     });
+    const clanId = args[0];
     const role =
       message.mentions.roles.first() || message.guild.roles.cache.get(args[0]);
     try {
       // Check if all data is given
-      if (!role) {
+      if (!args[0]) {
         command.react("❌");
         await message.edit({
-          content: `Input invalid. usage: \`\`\`.c delete <roleId>\`\`\``,
+          content: `Input invalid. usage: \`\`\`.c delete <roleId/clanId>\`\`\``,
         });
         return;
       }
-      // Check if given data is actually valid
-      const clan = await clansDb.findOne({ roleId: role.id });
+      // Check if given data is actually valid\
+      let clan;
+      console.log(args[0].length);
+      
+      if(args[0].length == 8){
+        clan = await clansDb.findOne({ clanId: args[0] });
+      } else {
+        clan = await clansDb.findOne({ roleId: role.id });
+      }
       if (!clan) {
         command.react("❌");
         await message.edit({
@@ -46,10 +54,11 @@ module.exports = new MessageCommand({
         });
         return;
       }
+      const validRole = message.guild.roles.cache.get(clan.roleId);
       const embed = new EmbedBuilder().setDescription(
         `
         # Are you sure you want to delete this clan?
-        Name: ${role.name}
+        Name: ${validRole.name}
         Role: <@&${clan.roleId}>
         Leader: <@${clan.leader}>
         Coleaders: ${clan.coleaders.join(", ")}
@@ -91,7 +100,7 @@ module.exports = new MessageCommand({
             components: [],
             embeds: [],
           });
-          await clansDb.deleteOne({ roleId: role.id });
+          await clansDb.deleteOne({ roleId: validRole.id });
           await message.edit({
             content: "Clan deleted.",
             embeds: [],
@@ -109,6 +118,27 @@ module.exports = new MessageCommand({
             embeds: [],
           });
         }
+      });
+      await client.logToChannel({
+        color: "Red",
+        description: `<@${command.author.id}> deleted a clan.
+
+
+
+        Name: ${validRole.name}
+
+        Role: <@&${clan.roleId}>
+
+        Leader: <@${clan.leader}>
+
+        Coleaders: ${clan.coleaders.join(", ")}
+
+        Members: ${clan.members.length} members
+
+        Voice Channel: <#${clan.voiceId}>
+        
+        Text Channel: <#${clan.textId}>
+          `,
       });
     } catch (err) {
       await message.edit({
